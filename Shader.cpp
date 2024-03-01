@@ -33,6 +33,7 @@ ID3D11PixelShader*  gGradientTintPostProcess = nullptr;
 ID3D11PixelShader*  gGreyNoisePostProcess    = nullptr;
 ID3D11PixelShader*  gBurnPostProcess         = nullptr;
 ID3D11PixelShader*  gDistortPostProcess      = nullptr;
+ID3D11PixelShader*  gBlurPostProcess         = nullptr;
 ID3D11PixelShader*  gSpiralPostProcess       = nullptr;
 ID3D11PixelShader*  gHeatHazePostProcess     = nullptr;
 
@@ -64,6 +65,7 @@ bool LoadShaders()
 	gGreyNoisePostProcess  = LoadPixelShader ("GreyNoise_pp");
 	gBurnPostProcess       = LoadPixelShader ("Burn_pp");
 	gDistortPostProcess    = LoadPixelShader ("Distort_pp");
+	gBlurPostProcess = LoadPixelShader("BasicBlur_pp");
 	gSpiralPostProcess     = LoadPixelShader ("Spiral_pp");
 	gHeatHazePostProcess   = LoadPixelShader ("HeatHaze_pp");
 
@@ -73,7 +75,8 @@ bool LoadShaders()
 		gTintPostProcess            == nullptr || gHeatHazePostProcess       == nullptr ||
 		gGreyNoisePostProcess       == nullptr || gBurnPostProcess           == nullptr ||
 		gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
-		g2DPolygonVertexShader      == nullptr || gGradientTintPostProcess == nullptr)
+		g2DPolygonVertexShader      == nullptr || gGradientTintPostProcess == nullptr ||
+		gBlurPostProcess == nullptr)
 	{
 		gLastError = "Error loading shaders";
 		return false;

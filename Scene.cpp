@@ -41,6 +41,7 @@ enum class PostProcess
 	Distort,
 	Spiral,
 	HeatHaze,
+	Blur,
 };
 
 enum class PostProcessMode
@@ -157,6 +158,9 @@ ID3D11Resource*           gBurnMap = nullptr;
 ID3D11ShaderResourceView* gBurnMapSRV = nullptr;
 ID3D11Resource*           gDistortMap = nullptr;
 ID3D11ShaderResourceView* gDistortMapSRV = nullptr;
+ID3D11Resource*		      gBlurMap = nullptr;
+ID3D11ShaderResourceView* gBlurMapSRV = nullptr;
+
 
 
 //****************************
@@ -202,7 +206,8 @@ bool InitGeometry()
 		!LoadTexture("Flare.jpg",                &gLightDiffuseMap,          &gLightDiffuseMapSRV) ||
 		!LoadTexture("Noise.png",                &gNoiseMap,   &gNoiseMapSRV) ||
 		!LoadTexture("Burn.png",                 &gBurnMap,    &gBurnMapSRV) ||
-		!LoadTexture("Distort.png",              &gDistortMap, &gDistortMapSRV))
+		!LoadTexture("Distort.png",              &gDistortMap, &gDistortMapSRV) ||
+		!LoadTexture("BlurMask.png",			     &gBlurMap,    &gBlurMapSRV))
 	{
 		gLastError = "Error loading textures";
 		return false;
@@ -350,6 +355,8 @@ void ReleaseResources()
 
 	if (gDistortMapSRV)                gDistortMapSRV->Release();
 	if (gDistortMap)                   gDistortMap->Release();
+	if (gBlurMapSRV)                   gBlurMapSRV->Release();
+	if (gBlurMap)                      gBlurMap->Release();
 	if (gBurnMapSRV)                   gBurnMapSRV->Release();
 	if (gBurnMap)                      gBurnMap->Release();
 	if (gNoiseMapSRV)                  gNoiseMapSRV->Release();
@@ -537,6 +544,13 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	else if (postProcess == PostProcess::HeatHaze)
 	{
 		gD3DContext->PSSetShader(gHeatHazePostProcess, nullptr, 0);
+	}
+
+	else if (postProcess == PostProcess::Blur) {
+		gD3DContext->PSSetShader(gBlurPostProcess, nullptr, 0);
+
+		gD3DContext->PSSetShaderResources(1, 1, &gBlurMapSRV);
+		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
 }
 
@@ -807,7 +821,7 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
 	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::GradientTint;
-	if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
+	if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::Blur;
 	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
 	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
 	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
@@ -820,7 +834,7 @@ void UpdateScene(float frameTime)
 	// Colour for tint shader
 	gPostProcessingConstants.tintColour = { 1, 0, 0 };
 
-	gPostProcessingConstants.gGradientColourBottom = { 1, 0, 0 };
+	gPostProcessingConstants.gGradientColourBottom = { 1, 0, 1 };
 	gPostProcessingConstants.gGradientColourTop = { 0, 1, 1 };
 
 	// Noise scaling adjusts how fine the grey noise is.
