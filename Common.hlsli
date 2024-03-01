@@ -152,6 +152,13 @@ cbuffer PostProcessingConstants : register(b1)
 	// Heat haze post-process settings
 	float  gHeatHazeTimer;
 	float3 paddingF;
+    
+    //Tint gradient post process settings
+    float3 gGradientColourTop;
+    float paddingG;
+    
+    float3 gGradientColourBottom;
+    float paddingH;
 }
 
 //**************************

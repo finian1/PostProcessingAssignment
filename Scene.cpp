@@ -35,6 +35,7 @@ enum class PostProcess
 	None,
 	Copy,
 	Tint,
+	GradientTint,
 	GreyNoise,
 	Burn,
 	Distort,
@@ -496,6 +497,11 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gTintPostProcess, nullptr, 0);
 	}
 
+	else if (postProcess == PostProcess::GradientTint)
+	{
+		gD3DContext->PSSetShader(gGradientTintPostProcess, nullptr, 0);
+	}
+
 	else if (postProcess == PostProcess::GreyNoise)
 	{
 		gD3DContext->PSSetShader(gGreyNoisePostProcess, nullptr, 0);
@@ -764,7 +770,7 @@ void RenderScene()
 			// An array of four points in world space - a tapered square centred at the origin
 			const std::array<CVector3, 4> points = {{ {0,5,0}, {-3,0,0}, {3,0,0}, {0,-5,0} }}; // C++ strangely needs an extra pair of {} here... only for std:array...
 			
-			CVector3 pos = gCube->Position();
+			CVector3 pos = { 40,10,10 };
 			// A rotating matrix placing the model above in the scene
 			static CMatrix4x4 polyMatrix = MatrixTranslation(pos);
 			polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
@@ -800,7 +806,7 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_F2))  gCurrentPostProcessMode = PostProcessMode::Area;
 	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
-	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
+	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::GradientTint;
 	if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
 	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
 	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
@@ -813,6 +819,9 @@ void UpdateScene(float frameTime)
 	
 	// Colour for tint shader
 	gPostProcessingConstants.tintColour = { 1, 0, 0 };
+
+	gPostProcessingConstants.gGradientColourBottom = { 1, 0, 0 };
+	gPostProcessingConstants.gGradientColourTop = { 0, 1, 1 };
 
 	// Noise scaling adjusts how fine the grey noise is.
 	const float grainSize = 140; // Fineness of the noise grain

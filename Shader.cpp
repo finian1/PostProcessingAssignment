@@ -25,15 +25,16 @@ ID3D11PixelShader*    gPixelLightingPixelShader   = nullptr;
 //*******************************
 //**** Post-processing shader DirectX objects
 // These are also added to Shader.h
-ID3D11VertexShader* g2DQuadVertexShader    = nullptr;
-ID3D11VertexShader* g2DPolygonVertexShader = nullptr;
-ID3D11PixelShader*  gCopyPostProcess       = nullptr;
-ID3D11PixelShader*  gTintPostProcess       = nullptr;
-ID3D11PixelShader*  gGreyNoisePostProcess  = nullptr;
-ID3D11PixelShader*  gBurnPostProcess       = nullptr;
-ID3D11PixelShader*  gDistortPostProcess    = nullptr;
-ID3D11PixelShader*  gSpiralPostProcess     = nullptr;
-ID3D11PixelShader*  gHeatHazePostProcess   = nullptr;
+ID3D11VertexShader* g2DQuadVertexShader      = nullptr;
+ID3D11VertexShader* g2DPolygonVertexShader   = nullptr;
+ID3D11PixelShader*  gCopyPostProcess         = nullptr;
+ID3D11PixelShader*  gTintPostProcess         = nullptr;
+ID3D11PixelShader*  gGradientTintPostProcess = nullptr;
+ID3D11PixelShader*  gGreyNoisePostProcess    = nullptr;
+ID3D11PixelShader*  gBurnPostProcess         = nullptr;
+ID3D11PixelShader*  gDistortPostProcess      = nullptr;
+ID3D11PixelShader*  gSpiralPostProcess       = nullptr;
+ID3D11PixelShader*  gHeatHazePostProcess     = nullptr;
 
 
 
@@ -59,6 +60,7 @@ bool LoadShaders()
 	g2DQuadVertexShader    = LoadVertexShader("2DQuad_pp");
 	gCopyPostProcess       = LoadPixelShader ("Copy_pp");
 	gTintPostProcess       = LoadPixelShader ("Tint_pp");
+	gGradientTintPostProcess = LoadPixelShader("GradientTint_pp");
 	gGreyNoisePostProcess  = LoadPixelShader ("GreyNoise_pp");
 	gBurnPostProcess       = LoadPixelShader ("Burn_pp");
 	gDistortPostProcess    = LoadPixelShader ("Distort_pp");
@@ -71,7 +73,7 @@ bool LoadShaders()
 		gTintPostProcess            == nullptr || gHeatHazePostProcess       == nullptr ||
 		gGreyNoisePostProcess       == nullptr || gBurnPostProcess           == nullptr ||
 		gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
-		g2DPolygonVertexShader      == nullptr)
+		g2DPolygonVertexShader      == nullptr || gGradientTintPostProcess == nullptr)
 	{
 		gLastError = "Error loading shaders";
 		return false;
@@ -89,6 +91,7 @@ void ReleaseShaders()
 	if (gBurnPostProcess)             gBurnPostProcess           ->Release();
 	if (gGreyNoisePostProcess)        gGreyNoisePostProcess      ->Release();
 	if (gTintPostProcess)             gTintPostProcess           ->Release();
+	if (gGradientTintPostProcess)	  gGradientTintPostProcess   ->Release();
 	if (gCopyPostProcess)             gCopyPostProcess           ->Release();
 	if (g2DPolygonVertexShader)       g2DPolygonVertexShader     ->Release();
 	if (g2DQuadVertexShader)          g2DQuadVertexShader        ->Release();
