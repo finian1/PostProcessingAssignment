@@ -56,10 +56,10 @@ auto gCurrentPostProcess     = PostProcess::None;
 auto gCurrentPostProcessMode = PostProcessMode::Fullscreen;
 
 
-CVector3 HSLtoRGB(int h, float s, float l)
+CVector3 HSLtoRGB(float h, float s, float l)
 {
 	float c = (1 - abs(2 * l - 1)) * s;
-	float x = c * (1 - abs(fmod((float)h / 60.0, 2) - 1));
+	float x = c * (1 - abs(fmod(h / 60.0, 2) - 1));
 	float m = l - c / 2;
 	float r = 0, g = 0, b = 0;
 
