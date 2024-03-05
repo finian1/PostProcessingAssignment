@@ -7,6 +7,8 @@
 
 #include <cmath>
 #include <stdint.h>
+#include "CVector2.h"
+#include "CVector3.h"
 
 
 // Surprisingly, pi is not *officially* defined anywhere in C++

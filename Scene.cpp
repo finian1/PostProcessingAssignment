@@ -55,6 +55,39 @@ enum class PostProcessMode
 auto gCurrentPostProcess     = PostProcess::None;
 auto gCurrentPostProcessMode = PostProcessMode::Fullscreen;
 
+
+CVector3 HSLtoRGB(int h, float s, float l)
+{
+	float c = (1 - abs(2 * l - 1)) * s;
+	float x = c * (1 - abs(fmod((float)h / 60.0, 2) - 1));
+	float m = l - c / 2;
+	float r = 0, g = 0, b = 0;
+
+	if (0 <= h && h < 60) {
+		r = c; g = x; b = 0;
+	}
+	else if (60 <= h && h < 120) {
+		r = x; g = c; b = 0;
+	}
+	else if (120 <= h && h < 180) {
+		r = 0; g = c; b = x;
+	}
+	else if (180 <= h && h < 240) {
+		r = 0; g = x; b = c;
+	}
+	else if (240 <= h && h < 300) {
+		r = x; g = 0; b = c;
+	}
+	else if (300 <= h && h < 360) {
+		r = c; g = 0; b = x;
+	}
+	r = r + m;
+	g = g + m;
+	b = b + m;
+
+	return { r,g,b };
+}
+
 //********************
 
 
@@ -838,8 +871,10 @@ void UpdateScene(float frameTime)
 	// Colour for tint shader
 	gPostProcessingConstants.tintColour = { 1, 0, 0 };
 
-	gPostProcessingConstants.gGradientColourBottom = { 1, 0, 1 };
-	gPostProcessingConstants.gGradientColourTop = { 0, 1, 1 };
+	static float colourShift = 0;
+	colourShift += 1;
+	gPostProcessingConstants.gGradientColourBottom = HSLtoRGB( (int)(200 + colourShift)%360, 1.0, 0.5 );
+	gPostProcessingConstants.gGradientColourTop = HSLtoRGB((int)(100 + colourShift)%360, 1.0, 0.5);
 
 	// Noise scaling adjusts how fine the grey noise is.
 	const float grainSize = 140; // Fineness of the noise grain
@@ -901,3 +936,4 @@ void UpdateScene(float frameTime)
 		frameCount = 0;
 	}
 }
+
