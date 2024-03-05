@@ -143,7 +143,8 @@ cbuffer PostProcessingConstants : register(b1)
 
 	// Distort post-process settings
 	float  gDistortLevel;
-	float3 paddingD;
+    float  gShiftTime;
+	float2 paddingD;
 
 	// Spiral post-process settings
 	float  gSpiralLevel;

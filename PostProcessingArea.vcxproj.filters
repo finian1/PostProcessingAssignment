@@ -106,7 +106,7 @@
     <FxCompile Include="Burn_pp.hlsl">
       <Filter>Post-Processing Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="GreyNoise_pp.hlsl">
+    <FxCompile Include="WaterDistort_pp.hlsl">
       <Filter>Post-Processing Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Spiral_pp.hlsl">

@@ -32,7 +32,7 @@ float4 main(PostProcessingInput input) : SV_Target
 	const float glassDarken = 0.8f;
 	
 	// Get distort texture colour
-    float3 distortTexture = DistortMap.Sample( TrilinearWrap, input.areaUV ).rgb;
+    float3 distortTexture = DistortMap.Sample(TrilinearWrap, input.areaUV).rgb;
 
 	// Get direction (2D vector) to distort UVs from the g & b components of the distortion texture ()
 	float2 distortVector = distortTexture.gb;

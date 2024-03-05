@@ -132,7 +132,8 @@ struct PostProcessingConstants
 
 	// Distort post-process settings
 	float    distortLevel;
-	CVector3 paddingD;
+	float	 shiftTime;
+	CVector2 paddingD;
 
 	// Spiral post-process settings
 	float    spiralLevel;

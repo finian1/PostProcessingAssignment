@@ -42,6 +42,7 @@ enum class PostProcess
 	Spiral,
 	HeatHaze,
 	Blur,
+	Water,
 };
 
 enum class PostProcessMode
@@ -101,7 +102,7 @@ ColourRGBA gBackgroundColor = { 0.3f, 0.3f, 0.4f, 1.0f };
 const float gLightOrbitRadius = 20.0f;
 const float gLightOrbitSpeed = 0.7f;
 
-
+std::vector<PostProcess> gPostProcessingList;
 
 //--------------------------------------------------------------------------------------
 // Constant Buffers
@@ -160,6 +161,8 @@ ID3D11Resource*           gDistortMap = nullptr;
 ID3D11ShaderResourceView* gDistortMapSRV = nullptr;
 ID3D11Resource*		      gBlurMap = nullptr;
 ID3D11ShaderResourceView* gBlurMapSRV = nullptr;
+ID3D11Resource*			  gWaterMap = nullptr;
+ID3D11ShaderResourceView* gWaterMapSRV = nullptr;
 
 
 
@@ -207,7 +210,8 @@ bool InitGeometry()
 		!LoadTexture("Noise.png",                &gNoiseMap,   &gNoiseMapSRV) ||
 		!LoadTexture("Burn.png",                 &gBurnMap,    &gBurnMapSRV) ||
 		!LoadTexture("Distort.png",              &gDistortMap, &gDistortMapSRV) ||
-		!LoadTexture("BlurMask.png",			     &gBlurMap,    &gBlurMapSRV))
+		!LoadTexture("BlurMask.png",			 &gBlurMap,    &gBlurMapSRV) ||
+		!LoadTexture("WaterDistort.png",         &gWaterMap,   &gWaterMapSRV))
 	{
 		gLastError = "Error loading textures";
 		return false;
@@ -361,6 +365,8 @@ void ReleaseResources()
 	if (gBurnMap)                      gBurnMap->Release();
 	if (gNoiseMapSRV)                  gNoiseMapSRV->Release();
 	if (gNoiseMap)                     gNoiseMap->Release();
+	if (gWaterMap)					   gWaterMap->Release();
+	if (gWaterMapSRV)				   gWaterMapSRV->Release();
 
 	if (gLightDiffuseMapSRV)           gLightDiffuseMapSRV->Release();
 	if (gLightDiffuseMap)              gLightDiffuseMap->Release();
@@ -509,15 +515,6 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gGradientTintPostProcess, nullptr, 0);
 	}
 
-	else if (postProcess == PostProcess::GreyNoise)
-	{
-		gD3DContext->PSSetShader(gGreyNoisePostProcess, nullptr, 0);
-
-		// Give pixel shader access to the noise texture
-		gD3DContext->PSSetShaderResources(1, 1, &gNoiseMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
-
 	else if (postProcess == PostProcess::Burn)
 	{
 		gD3DContext->PSSetShader(gBurnPostProcess, nullptr, 0);
@@ -533,6 +530,13 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 
 		// Give pixel shader access to the distortion texture (containts 2D vectors (in R & G) to shift the texture UVs to give a cut-glass impression)
 		gD3DContext->PSSetShaderResources(1, 1, &gDistortMapSRV);
+		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
+	}
+
+	else if (postProcess == PostProcess::Water)
+	{
+		gD3DContext->PSSetShader(gWaterDistortPostProcess, nullptr, 0);
+		gD3DContext->PSSetShaderResources(1, 1, &gWaterMapSRV);
 		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
 	}
 
@@ -822,7 +826,7 @@ void UpdateScene(float frameTime)
 
 	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::GradientTint;
 	if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::Blur;
-	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
+	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Water;
 	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
 	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
 	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
@@ -859,6 +863,7 @@ void UpdateScene(float frameTime)
 
 	// Update heat haze timer
 	gPostProcessingConstants.heatHazeTimer += frameTime;
+	gPostProcessingConstants.shiftTime += frameTime / 10.0f;
 
 	//***********
 
