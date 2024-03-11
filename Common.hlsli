@@ -160,6 +160,10 @@ cbuffer PostProcessingConstants : register(b1)
     
     float3 gGradientColourBottom;
     float paddingH;
+    
+    float gGaussianPassNum;
+    float gGaussianStandardDeviation;
+    float2 paddingI;
 }
 
 //**************************

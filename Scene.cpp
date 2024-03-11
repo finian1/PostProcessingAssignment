@@ -42,6 +42,7 @@ enum class PostProcess
 	Spiral,
 	HeatHaze,
 	Blur,
+	GaussianBlur,
 	Water,
 };
 
@@ -188,6 +189,10 @@ ID3D11Texture2D*			gMultiShaderTexture =		nullptr;
 ID3D11RenderTargetView*		gMultiShaderRenderTarget =	nullptr;
 ID3D11ShaderResourceView*	gMultiShaderTextureSRV =	nullptr;
 
+ID3D11Texture2D* gGaussianFirstPassTexture = nullptr;
+ID3D11RenderTargetView* gGaussianFirstPassRenderTarget = nullptr;
+ID3D11ShaderResourceView* gGaussianFirstPassTextureSRV = nullptr;
+
 
 // Additional textures used for specific post-processes
 ID3D11Resource*           gNoiseMap = nullptr;
@@ -306,29 +311,21 @@ bool InitGeometry()
 	sceneTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // IMPORTANT: Indicate we will use texture as render target, and pass it to shaders
 	sceneTextureDesc.CPUAccessFlags = 0;
 	sceneTextureDesc.MiscFlags = 0;
-	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gSceneTexture)))
+	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gSceneTexture)) ||
+		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gMultiShaderTexture)) ||
+		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gGaussianFirstPassTexture)))
 	{
-		gLastError = "Error creating scene texture";
-		return false;
-	}
-
-	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gMultiShaderTexture)))
-	{
-		gLastError = "Error creating scene texture";
+		gLastError = "Error creating textures";
 		return false;
 	}
 
 	// We created the scene texture above, now we get a "view" of it as a render target, i.e. get a special pointer to the texture that
 	// we use when rendering to it (see RenderScene function below)
-	if (FAILED(gD3DDevice->CreateRenderTargetView(gSceneTexture, NULL, &gSceneRenderTarget)))
+	if (FAILED(gD3DDevice->CreateRenderTargetView(gSceneTexture, NULL, &gSceneRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gMultiShaderRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gGaussianFirstPassRenderTarget)))
 	{
-		gLastError = "Error creating scene render target view";
-		return false;
-	}
-
-	if (FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gMultiShaderRenderTarget)))
-	{
-		gLastError = "Error creating scene render target view";
+		gLastError = "Error creating render target views";
 		return false;
 	}
 
@@ -611,6 +608,10 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShaderResources(1, 1, &gBlurMapSRV);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
+
+	else if (postProcess == PostProcess::GaussianBlur) {
+		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
+	}
 }
 
 
@@ -729,10 +730,19 @@ void MultiShaderFullScreenPostProcess()
 
 		SelectPostProcessShaderAndTextures(gPostProcessingList[i]);
 
+		//For multi-pass gaussian blur
+		if (gPostProcessingList[i] == PostProcess::GaussianBlur)
+		{
+			gPostProcessingConstants.gGaussianPassNum = 1;
+			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->Draw(4, 0);
+			gPostProcessingConstants.gGaussianPassNum = 2;
+		}
 		UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 		gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 		gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-
 		gD3DContext->Draw(4, 0);
 	}
 	

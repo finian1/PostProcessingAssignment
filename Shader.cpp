@@ -33,6 +33,7 @@ ID3D11PixelShader*  gGradientTintPostProcess = nullptr;
 ID3D11PixelShader*  gBurnPostProcess         = nullptr;
 ID3D11PixelShader*  gDistortPostProcess      = nullptr;
 ID3D11PixelShader*  gBlurPostProcess         = nullptr;
+ID3D11PixelShader*  gGaussianBlurPostProcess = nullptr;
 ID3D11PixelShader*  gSpiralPostProcess       = nullptr;
 ID3D11PixelShader*  gHeatHazePostProcess     = nullptr;
 ID3D11PixelShader*  gWaterDistortPostProcess = nullptr;
@@ -64,6 +65,7 @@ bool LoadShaders()
 	gBurnPostProcess       = LoadPixelShader ("Burn_pp");
 	gDistortPostProcess    = LoadPixelShader ("Distort_pp");
 	gBlurPostProcess = LoadPixelShader("BasicBlur_pp");
+	gGaussianBlurPostProcess = LoadPixelShader("GaussianBlur_pp");
 	gSpiralPostProcess     = LoadPixelShader ("Spiral_pp");
 	gHeatHazePostProcess   = LoadPixelShader ("HeatHaze_pp");
 	gWaterDistortPostProcess = LoadPixelShader("WaterDistort_pp");
@@ -72,7 +74,7 @@ bool LoadShaders()
 		gTintedTexturePixelShader   == nullptr || gPixelLightingPixelShader  == nullptr ||
 		g2DQuadVertexShader         == nullptr || gCopyPostProcess           == nullptr ||
 		gTintPostProcess            == nullptr || gHeatHazePostProcess       == nullptr ||
-		gBurnPostProcess           == nullptr ||
+		gBurnPostProcess           == nullptr || gGaussianBlurPostProcess == nullptr ||
 		gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
 		g2DPolygonVertexShader      == nullptr || gGradientTintPostProcess == nullptr ||
 		gBlurPostProcess == nullptr || gWaterDistortPostProcess == nullptr)
@@ -101,6 +103,7 @@ void ReleaseShaders()
 	if (gPixelLightingVertexShader)   gPixelLightingVertexShader ->Release();
 	if (gBasicTransformVertexShader)  gBasicTransformVertexShader->Release();
 	if (gBlurPostProcess)             gBlurPostProcess           ->Release();
+	if (gGaussianBlurPostProcess)	  gGaussianBlurPostProcess	 ->Release();
 	if (gWaterDistortPostProcess)     gWaterDistortPostProcess   ->Release();
 }
 
