@@ -31,10 +31,10 @@ extern ID3D11PixelShader*  gGradientTintPostProcess;
 extern ID3D11PixelShader*  gBurnPostProcess;
 extern ID3D11PixelShader*  gDistortPostProcess;
 extern ID3D11PixelShader*  gBlurPostProcess;
+extern ID3D11PixelShader* gGaussianBlurPostProcess;
 extern ID3D11PixelShader*  gSpiralPostProcess;
 extern ID3D11PixelShader*  gHeatHazePostProcess;
 extern ID3D11PixelShader*  gWaterDistortPostProcess;
-extern ID3D11PixelShader*  gGaussianBlurPostProcess;
 
 
 

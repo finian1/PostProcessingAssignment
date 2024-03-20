@@ -611,6 +611,7 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 
 	else if (postProcess == PostProcess::GaussianBlur) {
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
+		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
 }
 
@@ -733,12 +734,12 @@ void MultiShaderFullScreenPostProcess()
 		//For multi-pass gaussian blur
 		if (gPostProcessingList[i] == PostProcess::GaussianBlur)
 		{
-			gPostProcessingConstants.gGaussianPassNum = 1;
+			gPostProcessingConstants.gGaussianBlurDirection = { 0,1 };
 			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 			gD3DContext->Draw(4, 0);
-			gPostProcessingConstants.gGaussianPassNum = 2;
+			gPostProcessingConstants.gGaussianBlurDirection = { 1,0 };
 		}
 		UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 		gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
@@ -986,35 +987,64 @@ void UpdateScene(float frameTime)
 		gCurrentPostProcess = PostProcess::GradientTint;
 		gPostProcessingList.push_back(gCurrentPostProcess);
 	};
-	if (KeyHit(Key_2)) 
+	if (KeyHit(Key_2))
 	{
 		gCurrentPostProcess = PostProcess::Blur;
 		gPostProcessingList.push_back(gCurrentPostProcess);
 	};
-	if (KeyHit(Key_3))   
+	if (KeyHit(Key_3))
 	{
 		gCurrentPostProcess = PostProcess::Water;
 		gPostProcessingList.push_back(gCurrentPostProcess);
 	};
-	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
+	if (KeyHit(Key_4)) 
+	{
+		gCurrentPostProcess = PostProcess::GaussianBlur;
+		gPostProcessingList.push_back(gCurrentPostProcess);
+	};
 	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
 	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
 	if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
-	if (KeyHit(Key_0)) 
+	if (KeyHit(Key_0))
 	{
 		gCurrentPostProcess = PostProcess::None;
 		gPostProcessingList.clear();
 	};
 
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
-	
+
 	// Colour for tint shader
 	gPostProcessingConstants.tintColour = { 1, 0, 0 };
 
 	static float colourShift = 0;
 	colourShift += 1;
-	gPostProcessingConstants.gGradientColourBottom = HSLtoRGB( (int)(200 + colourShift)%360, 1.0, 0.5 );
-	gPostProcessingConstants.gGradientColourTop = HSLtoRGB((int)(100 + colourShift)%360, 1.0, 0.5);
+	gPostProcessingConstants.gGradientColourBottom = HSLtoRGB((int)(200 + colourShift) % 360, 1.0, 0.5);
+	gPostProcessingConstants.gGradientColourTop = HSLtoRGB((int)(100 + colourShift) % 360, 1.0, 0.5);
+
+	float offsets[6] = { 
+		-4.378621204796657,
+		-2.431625915613778,
+		-0.4862426846689485,
+		1.4588111840004858,
+		3.4048471718931532,
+		5 
+	};
+	for (int i = 0; i < 6; i++)
+	{
+		gPostProcessingConstants.gGaussianOffsets[i] = offsets[i];
+	}
+	float weights[6] = {
+		0.09461172151436463,
+		0.20023097066826712,
+		0.2760751120037518,
+		0.24804559825032563,
+		0.14521459357563646,
+		0.035822003987654526
+	};
+	for (int i = 0; i < 6; i++)
+	{
+		gPostProcessingConstants.gGaussianWeights[i] = weights[i];
+	}
 
 	// Noise scaling adjusts how fine the grey noise is.
 	const float grainSize = 140; // Fineness of the noise grain
@@ -1039,6 +1069,8 @@ void UpdateScene(float frameTime)
 	// Update heat haze timer
 	gPostProcessingConstants.heatHazeTimer += frameTime;
 	gPostProcessingConstants.shiftTime += frameTime / 10.0f;
+
+
 
 	//***********
 
