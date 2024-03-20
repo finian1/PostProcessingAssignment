@@ -5,8 +5,6 @@ SamplerState PointSample : register(s0);
 
 float4 main(PostProcessingInput input) : SV_Target
 {
-	//We want the colour to be a combination of the top tint and the bottom tint based on height on screen.
-    //If we wanted a better looking gradient, we would use Hue or Luminosity interpolation.
     float4 result = { 0,0,0,0 };
     float2 size;
     SceneTexture.GetDimensions(size.x, size.y);

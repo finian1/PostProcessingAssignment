@@ -162,12 +162,13 @@ cbuffer PostProcessingConstants : register(b1)
     float paddingH;
     
     float2 gGaussianBlurDirection;
-    float gGaussianStandardDeviation;
-    float paddingI;
-    float gGaussianOffsets[6];
-    float2 paddingJ;
+    float2 paddingI;
+
     float gGaussianWeights[6];
+    float2 paddingJ;
+    float gGaussianOffsets[6];
     float2 paddingK;
+
 }
 
 //**************************

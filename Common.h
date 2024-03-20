@@ -144,19 +144,20 @@ struct PostProcessingConstants
 	CVector3 paddingF;
 
 	//Tint gradient post process settings
-	CVector3 gGradientColourTop;
+	CVector3 gradientColourTop;
 	float paddingG;
 
-	CVector3 gGradientColourBottom;
+	CVector3 gradientColourBottom;
 	float paddingH;
 
-	CVector2 gGaussianBlurDirection;
+	CVector2 gaussianBlurDirection;
 	CVector2 paddingI;
 
-	float gGaussianOffsets[6];
+	float gaussianWeights[6];
 	CVector2 paddingJ;
-	float gGaussianWeights[6];
-	CVector2 paddingK;
+	float gaussianOffsets[6];
+	CVector2 paddingk;
+
 };
 extern PostProcessingConstants gPostProcessingConstants;      // This variable holds the CPU-side constant buffer described above
 extern ID3D11Buffer*           gPostProcessingConstantBuffer; // This variable controls the GPU-side constant buffer related to the above structure
