@@ -143,6 +143,11 @@ struct PostProcessingConstants
 	float    heatHazeTimer;
 	CVector3 paddingF;
 
+	float gaussianWeights[6];
+	CVector2 paddingJ;
+	float gaussianOffsets[6];
+	CVector2 paddingk;
+
 	//Tint gradient post process settings
 	CVector3 gradientColourTop;
 	float paddingG;
@@ -153,10 +158,6 @@ struct PostProcessingConstants
 	CVector2 gaussianBlurDirection;
 	CVector2 paddingI;
 
-	float gaussianWeights[6];
-	CVector2 paddingJ;
-	float gaussianOffsets[6];
-	CVector2 paddingk;
 
 };
 extern PostProcessingConstants gPostProcessingConstants;      // This variable holds the CPU-side constant buffer described above

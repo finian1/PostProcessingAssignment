@@ -154,6 +154,11 @@ cbuffer PostProcessingConstants : register(b1)
 	float  gHeatHazeTimer;
 	float3 paddingF;
     
+    float4 gGaussianWeightsPacked[2];
+    static const float gGaussianWeights[8] = (float[8]) gGaussianWeightsPacked;
+    float4 gGaussianOffsetsPacked[2];
+    static const float gGaussianOffsets[8] = (float[8]) gGaussianOffsetsPacked;
+
     //Tint gradient post process settings
     float3 gGradientColourTop;
     float paddingG;
@@ -164,10 +169,6 @@ cbuffer PostProcessingConstants : register(b1)
     float2 gGaussianBlurDirection;
     float2 paddingI;
 
-    float gGaussianWeights[6];
-    float2 paddingJ;
-    float gGaussianOffsets[6];
-    float2 paddingK;
 
 }
 
