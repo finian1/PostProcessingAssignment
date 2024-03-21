@@ -9,7 +9,7 @@ float4 main(PostProcessingInput input) : SV_Target
     float2 size;
     SceneTexture.GetDimensions(size.x, size.y);
     
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 21; i++)
     {
         float2 offset = gGaussianBlurDirection * gGaussianOffsets[i] / size;
         float weight = gGaussianWeights[i];

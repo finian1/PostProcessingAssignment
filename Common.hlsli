@@ -154,10 +154,10 @@ cbuffer PostProcessingConstants : register(b1)
 	float  gHeatHazeTimer;
 	float3 paddingF;
     
-    float4 gGaussianWeightsPacked[2];
-    static const float gGaussianWeights[8] = (float[8]) gGaussianWeightsPacked;
-    float4 gGaussianOffsetsPacked[2];
-    static const float gGaussianOffsets[8] = (float[8]) gGaussianOffsetsPacked;
+    float4 gGaussianWeightsPacked[6];
+    static const float gGaussianWeights[21] = (float[21]) gGaussianWeightsPacked;
+    float4 gGaussianOffsetsPacked[6];
+    static const float gGaussianOffsets[21] = (float[21]) gGaussianOffsetsPacked;
 
     //Tint gradient post process settings
     float3 gGradientColourTop;

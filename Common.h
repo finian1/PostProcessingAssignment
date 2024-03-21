@@ -143,10 +143,10 @@ struct PostProcessingConstants
 	float    heatHazeTimer;
 	CVector3 paddingF;
 
-	float gaussianWeights[6];
-	CVector2 paddingJ;
-	float gaussianOffsets[6];
-	CVector2 paddingk;
+	float gaussianWeights[21];
+	CVector3 paddingJ;
+	float gaussianOffsets[21];
+	CVector3 paddingk;
 
 	//Tint gradient post process settings
 	CVector3 gradientColourTop;

@@ -141,6 +141,11 @@ const float gLightOrbitRadius = 20.0f;
 const float gLightOrbitSpeed = 0.7f;
 
 std::vector<PostProcess> gPostProcessingList;
+float gGaussianSigmaValue = 3;
+const int gGaussianRadius = 20;
+
+float gOffsets[21] = {};
+float gWeights[21] = {};
 
 //--------------------------------------------------------------------------------------
 // Constant Buffers
@@ -989,6 +994,54 @@ void RenderScene()
 	gSwapChain->Present(lockFPS ? 1 : 0, 0);
 }
 
+void UpdateGaussianKernel()
+{
+	std::vector<float> weights;
+	float sumWeights = 0.0f;
+	for (int i = -gGaussianRadius; i <= gGaussianRadius; i++)
+	{
+		float w = 0;
+		w = (erf(((float)i + 0.5f) / gGaussianSigmaValue / sqrt(2)) - erf(((float)i - 0.5f) / gGaussianSigmaValue / sqrt(2))) / 2;
+		sumWeights += w;
+		weights.push_back(w);
+	}
+	for (int i = 0; i < weights.size(); i++)
+	{
+		weights[i] /= sumWeights;
+	}
+	std::vector<float> finalWeights;
+	std::vector<float> offsets;
+
+	for (int i = -gGaussianRadius; i <= gGaussianRadius; i += 2)
+	{
+		if (i == gGaussianRadius)
+		{
+			offsets.push_back(i);
+			finalWeights.push_back(weights[i + gGaussianRadius]);
+		}
+		else
+		{
+			const float w0 = weights[i + gGaussianRadius + 0];
+			const float w1 = weights[i + gGaussianRadius + 1];
+
+			const float w = w0 + w1;
+			if (w > 0)
+			{
+				offsets.push_back(i + w1 / w);
+			}
+			else
+			{
+				offsets.push_back(i);
+			}
+			finalWeights.push_back(w);
+		}
+	}
+	for (int i = 0; i < finalWeights.size(); i++)
+	{
+		gWeights[i] = finalWeights[i];
+		gOffsets[i] = offsets[i];
+	}
+}
 
 //--------------------------------------------------------------------------------------
 // Scene Update
@@ -1034,6 +1087,17 @@ void UpdateScene(float frameTime)
 		gPostProcessingList.clear();
 	};
 
+	if (KeyHit(Key_Plus))
+	{
+		gGaussianSigmaValue += 0.5f;
+		UpdateGaussianKernel();
+	}
+	if (KeyHit(Key_Minus))
+	{
+		gGaussianSigmaValue -= 0.5f;
+		UpdateGaussianKernel();
+	}
+
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 
 	// Colour for tint shader
@@ -1043,30 +1107,14 @@ void UpdateScene(float frameTime)
 	colourShift += 1;
 	gPostProcessingConstants.gradientColourBottom = HSLtoRGB((int)(200 + colourShift) % 360, 1.0, 0.5);
 	gPostProcessingConstants.gradientColourTop = HSLtoRGB((int)(100 + colourShift) % 360, 1.0, 0.5);
-
-	float offsets[6] = { 
-		-4.378621204796657,
-		-2.431625915613778,
-		-0.4862426846689485,
-		1.4588111840004858,
-		3.4048471718931532,
-		5 
-	};
-	for (int i = 0; i < 6; i++)
+	UpdateGaussianKernel();
+	for (int i = 0; i < 21; i++)
 	{
-		gPostProcessingConstants.gaussianOffsets[i] = offsets[i];
+		gPostProcessingConstants.gaussianOffsets[i] = gOffsets[i];
 	}
-	float weights[6] = {
-		0.09461172151436463,
-		0.20023097066826712,
-		0.2760751120037518,
-		0.24804559825032563,
-		0.14521459357563646,
-		0.035822003987654526
-	};
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 21; i++)
 	{
-		gPostProcessingConstants.gaussianWeights[i] = weights[i];
+		gPostProcessingConstants.gaussianWeights[i] = gWeights[i];
 	}
 
 	// Noise scaling adjusts how fine the grey noise is.
