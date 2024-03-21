@@ -204,6 +204,10 @@ ID3D11Texture2D* gGaussianFirstPassTexture = nullptr;
 ID3D11RenderTargetView* gGaussianFirstPassRenderTarget = nullptr;
 ID3D11ShaderResourceView* gGaussianFirstPassTextureSRV = nullptr;
 
+ID3D11Texture2D* gLowResTexture = nullptr; // This object represents the memory used by the texture on the GPU
+ID3D11RenderTargetView* gLowResRenderTarget = nullptr; // This object is used when we want to render to the texture above
+ID3D11ShaderResourceView* gLowResTextureSRV = nullptr;
+
 
 // Additional textures used for specific post-processes
 ID3D11Resource*           gNoiseMap = nullptr;
@@ -332,12 +336,21 @@ bool InitGeometry()
 		gLastError = "Error creating textures";
 		return false;
 	}
+	sceneTextureDesc.Width = gViewportWidth / 2;
+	sceneTextureDesc.Height = gViewportHeight / 2;
+
+	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gLowResTexture)))
+	{
+		gLastError = "Error creating textures";
+		return false;
+	}
 
 	// We created the scene texture above, now we get a "view" of it as a render target, i.e. get a special pointer to the texture that
 	// we use when rendering to it (see RenderScene function below)
 	if (FAILED(gD3DDevice->CreateRenderTargetView(gSceneTexture, NULL, &gSceneRenderTarget)) ||
 		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gMultiShaderRenderTarget)) ||
-		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gGaussianFirstPassRenderTarget)))
+		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gGaussianFirstPassRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gLowResRenderTarget)))
 	{
 		gLastError = "Error creating render target views";
 		return false;
@@ -356,6 +369,11 @@ bool InitGeometry()
 	}
 
 	if (FAILED(gD3DDevice->CreateShaderResourceView(gMultiShaderTexture, &srDesc, &gMultiShaderTextureSRV)))
+	{
+		gLastError = "Error creating scene shader resource view";
+		return false;
+	}
+	if (FAILED(gD3DDevice->CreateShaderResourceView(gLowResTexture, &srDesc, &gLowResTextureSRV)))
 	{
 		gLastError = "Error creating scene shader resource view";
 		return false;
@@ -1090,12 +1108,10 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_Plus))
 	{
 		gGaussianSigmaValue += 0.5f;
-		UpdateGaussianKernel();
 	}
 	if (KeyHit(Key_Minus))
 	{
 		gGaussianSigmaValue -= 0.5f;
-		UpdateGaussianKernel();
 	}
 
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)

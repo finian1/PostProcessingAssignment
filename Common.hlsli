@@ -169,6 +169,7 @@ cbuffer PostProcessingConstants : register(b1)
     float2 gGaussianBlurDirection;
     float2 paddingI;
 
+    float4 gRetroColourPalette[8];
 
 }
 
