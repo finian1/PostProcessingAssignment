@@ -12,5 +12,21 @@ float4 main(PostProcessingInput input) : SV_Target
 // Pass low res texture to retro shader
 // Pass pallete to shader
 // Determine which colour in the pallete the current pixel is closet to.
-	return float4(0,0,0,0);
+    float3 lowResColour = LowResTexture.Sample(PointSample, input.sceneUV).rgb;
+	
+    float3 finalColour;
+    float colourDist = 999.0f;
+    for (int i = 0; i < 8; i++)
+    {
+        float currentColourDist = sqrt(pow(lowResColour.r - gRetroColourPalette[i].r, 2) +
+                pow(lowResColour.g - gRetroColourPalette[i].g, 2) +
+                pow(lowResColour.b - gRetroColourPalette[i].b, 2));
+        if(currentColourDist < colourDist)
+        {
+            colourDist = currentColourDist;
+            finalColour = gRetroColourPalette[i].rgb;
+        }
+    }
+	
+    return float4(finalColour, 1.0);
 }

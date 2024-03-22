@@ -44,6 +44,7 @@ enum class PostProcess
 	Blur,
 	GaussianBlur,
 	Water,
+	Retro,
 };
 
 enum class PostProcessMode
@@ -143,6 +144,8 @@ const float gLightOrbitSpeed = 0.7f;
 std::vector<PostProcess> gPostProcessingList;
 float gGaussianSigmaValue = 3;
 const int gGaussianRadius = 20;
+
+const float gRetroScale = 8.0f;
 
 float gOffsets[21] = {};
 float gWeights[21] = {};
@@ -336,8 +339,8 @@ bool InitGeometry()
 		gLastError = "Error creating textures";
 		return false;
 	}
-	sceneTextureDesc.Width = gViewportWidth / 2;
-	sceneTextureDesc.Height = gViewportHeight / 2;
+	sceneTextureDesc.Width = gViewportWidth / gRetroScale;
+	sceneTextureDesc.Height = gViewportHeight / gRetroScale;
 
 	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gLowResTexture)))
 	{
@@ -349,8 +352,8 @@ bool InitGeometry()
 	// we use when rendering to it (see RenderScene function below)
 	if (FAILED(gD3DDevice->CreateRenderTargetView(gSceneTexture, NULL, &gSceneRenderTarget)) ||
 		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gMultiShaderRenderTarget)) ||
-		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gGaussianFirstPassRenderTarget)) ||
-		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gLowResRenderTarget)))
+		FAILED(gD3DDevice->CreateRenderTargetView(gGaussianFirstPassTexture, NULL, &gGaussianFirstPassRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gLowResTexture, NULL, &gLowResRenderTarget)))
 	{
 		gLastError = "Error creating render target views";
 		return false;
@@ -659,6 +662,11 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
+	else if (postProcess == PostProcess::Retro)
+	{
+		gD3DContext->PSSetShader(gRetroPostProcess, nullptr, 0);
+		gD3DContext->PSSetShaderResources(1, 1, &gLowResTextureSRV);
+	}
 }
 
 
@@ -746,13 +754,24 @@ void MultiShaderFullScreenPostProcess()
 	gPostProcessingConstants.area2DSize = { 1, 1 }; // Full size of screen
 	gPostProcessingConstants.area2DDepth = 0;        // Depth buffer value for full screen is as close as possible
 
-
+	
 	// Pass over the above post-processing settings (also the per-process settings prepared in UpdateScene function below)
 	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 
 	gD3DContext->Draw(4, 0);
+	//
+
+	gPostProcessingConstants.copyZoom = gRetroScale;
+	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+	gD3DContext->OMSetRenderTargets(1, &gLowResRenderTarget, gDepthStencil);
+	gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
+	gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
+	gD3DContext->Draw(4, 0);
+	gPostProcessingConstants.copyZoom = 1.0f;
 
 	ID3D11ShaderResourceView* lastViewUsed = gMultiShaderTextureSRV;
 	//Run texture through each filter stored in the list
@@ -969,7 +988,6 @@ void RenderScene()
 	// Render the scene from the main camera
 	RenderSceneFromCamera(gCamera);
 
-
 	////--------------- Scene completion ---------------////
 
 	// Run any post-processing steps
@@ -1096,7 +1114,10 @@ void UpdateScene(float frameTime)
 		gCurrentPostProcess = PostProcess::GaussianBlur;
 		gPostProcessingList.push_back(gCurrentPostProcess);
 	};
-	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
+	if (KeyHit(Key_5)) {
+		gCurrentPostProcess = PostProcess::Retro;
+		gPostProcessingList.push_back(gCurrentPostProcess);
+	}
 	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
 	if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
 	if (KeyHit(Key_0))
@@ -1132,6 +1153,20 @@ void UpdateScene(float frameTime)
 	{
 		gPostProcessingConstants.gaussianWeights[i] = gWeights[i];
 	}
+	CVector4 palette[8] = {
+		CVector4(0.1294, 0.0588, 0.0117, 1.0), //
+		CVector4(0.2431, 0.2470, 0.0431, 1.0), // 
+		CVector4(0.2117, 0.3764, 0.1215, 1.0), //
+		CVector4(0.2313, 0.5098, 0.3098, 1.0), //
+		CVector4(0.3647, 0.6392, 0.6156, 1.0), //
+		CVector4(0.5372, 0.6352, 0.7568, 1.0), //
+		CVector4(0.7490, 0.7215, 0.8666, 1.0), //
+		CVector4(0.9725, 0.9490, 0.9764, 1.0), //
+	};
+	for (int i = 0; i < 8; i++)
+	{
+		gPostProcessingConstants.retroColourPalette[i] = palette[i];
+	}
 
 	// Noise scaling adjusts how fine the grey noise is.
 	const float grainSize = 140; // Fineness of the noise grain
@@ -1157,7 +1192,7 @@ void UpdateScene(float frameTime)
 	gPostProcessingConstants.heatHazeTimer += frameTime;
 	gPostProcessingConstants.shiftTime += frameTime / 10.0f;
 
-
+	gPostProcessingConstants.copyZoom = 1.0f;
 
 	//***********
 

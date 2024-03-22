@@ -171,6 +171,8 @@ cbuffer PostProcessingConstants : register(b1)
 
     float4 gRetroColourPalette[8];
 
+    float gCopyZoom;
+    float3 paddingL;
 }
 
 //**************************
