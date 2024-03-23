@@ -42,7 +42,8 @@ enum class PostProcess
 	Spiral,
 	HeatHaze,
 	Blur,
-	GaussianBlur,
+	GaussianBlurPass1,
+	GaussianBlurPass2,
 	Water,
 	Retro,
 };
@@ -658,7 +659,13 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
 
-	else if (postProcess == PostProcess::GaussianBlur) {
+	else if (postProcess == PostProcess::GaussianBlurPass1) {
+		gPostProcessingConstants.gaussianBlurDirection = { 0,1 };
+		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
+		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
+	}
+	else if (postProcess == PostProcess::GaussianBlurPass2) {
+		gPostProcessingConstants.gaussianBlurDirection = { 1,0 };
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
@@ -763,27 +770,33 @@ void MultiShaderFullScreenPostProcess()
 	gD3DContext->Draw(4, 0);
 	//
 
-	gPostProcessingConstants.copyZoom = gRetroScale;
-	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
-	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-	gD3DContext->OMSetRenderTargets(1, &gLowResRenderTarget, gDepthStencil);
-	gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
-	gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
-	gD3DContext->Draw(4, 0);
-	gPostProcessingConstants.copyZoom = 1.0f;
+	
 
-	ID3D11ShaderResourceView* lastViewUsed = gMultiShaderTextureSRV;
+	ID3D11ShaderResourceView* nextViewToUse = gMultiShaderTextureSRV;
 	//Run texture through each filter stored in the list
 	for (int i = 0; i < gPostProcessingList.size(); i++)
 	{
+		if (gPostProcessingList[i] == PostProcess::Retro)
+		{
+			gPostProcessingConstants.copyZoom = gRetroScale;
+			SelectPostProcessShaderAndTextures(PostProcess::Copy);
+			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->OMSetRenderTargets(1, &gLowResRenderTarget, gDepthStencil);
+			gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
+			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
+			gD3DContext->Draw(4, 0);
+			gPostProcessingConstants.copyZoom = 1.0f;
+		}
+
 		if (i % 2 == 0)
 		{
 			gD3DContext->OMSetRenderTargets(1, &gSceneRenderTarget, gDepthStencil);
 
 			gD3DContext->PSSetShaderResources(0, 1, &gMultiShaderTextureSRV);
 			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
-			lastViewUsed = gSceneTextureSRV;
+			nextViewToUse = gSceneTextureSRV;
 		}
 		else
 		{
@@ -791,21 +804,10 @@ void MultiShaderFullScreenPostProcess()
 
 			gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
 			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
-			lastViewUsed = gMultiShaderTextureSRV;
+			nextViewToUse = gMultiShaderTextureSRV;
 		}
 
 		SelectPostProcessShaderAndTextures(gPostProcessingList[i]);
-
-		//For multi-pass gaussian blur
-		if (gPostProcessingList[i] == PostProcess::GaussianBlur)
-		{
-			gPostProcessingConstants.gaussianBlurDirection = { 0,1 };
-			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
-			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-			gD3DContext->Draw(4, 0);
-			gPostProcessingConstants.gaussianBlurDirection = { 1,0 };
-		}
 		UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 		gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 		gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
@@ -817,7 +819,7 @@ void MultiShaderFullScreenPostProcess()
 	gD3DContext->OMSetRenderTargets(1, &gBackBufferRenderTarget, gDepthStencil);
 
 	// Give the pixel shader (post-processing shader) access to the scene texture 
-	gD3DContext->PSSetShaderResources(0, 1, &lastViewUsed);
+	gD3DContext->PSSetShaderResources(0, 1, &nextViewToUse);
 	gD3DContext->PSSetSamplers(0, 1, &gPointSampler); // Use point sampling (no bilinear, trilinear, mip-mapping etc. for most post-processes)
 
 	// Select shader and textures needed for the required post-processes (helper function above)
@@ -1111,8 +1113,9 @@ void UpdateScene(float frameTime)
 	};
 	if (KeyHit(Key_4)) 
 	{
-		gCurrentPostProcess = PostProcess::GaussianBlur;
-		gPostProcessingList.push_back(gCurrentPostProcess);
+		gCurrentPostProcess = PostProcess::GaussianBlurPass1;
+		gPostProcessingList.push_back(PostProcess::GaussianBlurPass1);
+		gPostProcessingList.push_back(PostProcess::GaussianBlurPass2);
 	};
 	if (KeyHit(Key_5)) {
 		gCurrentPostProcess = PostProcess::Retro;
