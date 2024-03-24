@@ -154,6 +154,10 @@ const float gRetroScale = 8.0f;
 float gOffsets[21] = {};
 float gWeights[21] = {};
 
+float gHorizontalBlurStrength = 1.0f;
+float gVerticalBlurStrength = 1.0f;
+float gBlurShiftTimer = 0.0f;
+
 //--------------------------------------------------------------------------------------
 // Constant Buffers
 //--------------------------------------------------------------------------------------
@@ -729,12 +733,12 @@ bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	}
 
 	else if (postProcess == PostProcess::GaussianBlurPass1) {
-		gPostProcessingConstants.gaussianBlurDirection = { 0,1 };
+		gPostProcessingConstants.gaussianBlurDirection = { 0,gVerticalBlurStrength };
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
 	else if (postProcess == PostProcess::GaussianBlurPass2) {
-		gPostProcessingConstants.gaussianBlurDirection = { 1,0 };
+		gPostProcessingConstants.gaussianBlurDirection = { gHorizontalBlurStrength,0 };
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
@@ -1289,7 +1293,9 @@ void UpdateScene(float frameTime)
 	gPostProcessingConstants.bloomStrength = 1.0f;
 
 	//***********
-
+	/*gBlurShiftTimer += frameTime;
+	gHorizontalBlurStrength = cos(gBlurShiftTimer);
+	gVerticalBlurStrength = sin(gBlurShiftTimer);*/
 
 	// Orbit one light - a bit of a cheat with the static variable [ask the tutor if you want to know what this is]
 	static float lightRotate = 0.0f;
