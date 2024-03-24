@@ -8,8 +8,6 @@ SamplerState BlurSample : register(s1);
 
 float4 main(PostProcessingInput input) : SV_Target
 {
-	//We want the colour to be a combination of the top tint and the bottom tint based on height on screen.
-    //If we wanted a better looking gradient, we would use Hue or Luminosity interpolation.
 	int maskWidth;
 	int maskHeight;
 	int sceneWidth;

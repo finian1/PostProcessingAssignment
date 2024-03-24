@@ -45,7 +45,10 @@ enum class PostProcess
 	GaussianBlurPass1,
 	GaussianBlurPass2,
 	Water,
+	LowResPass,
 	Retro,
+	BloomMaskPass,
+	Bloom,
 };
 
 enum class PostProcessMode
@@ -190,7 +193,40 @@ ID3D11ShaderResourceView* gWallDiffuseSpecularMapSRV = nullptr;
 ID3D11Resource*           gLightDiffuseMap = nullptr;
 ID3D11ShaderResourceView* gLightDiffuseMapSRV = nullptr;
 
+struct GeneratedTexture
+{
+	ID3D11Texture2D* Texture = nullptr;
+	ID3D11RenderTargetView* RenderTarget = nullptr;
+	ID3D11ShaderResourceView* TextureSRV = nullptr;
 
+	~GeneratedTexture()
+	{
+		if (Texture)		Texture->Release();
+		if (RenderTarget)	RenderTarget->Release();
+		if (TextureSRV)		TextureSRV->Release();
+	}
+
+	bool InitTexture(D3D11_TEXTURE2D_DESC desc)
+	{
+		if (FAILED(gD3DDevice->CreateTexture2D(&desc, NULL, &Texture)))
+		{
+			return false;
+		}
+		if (FAILED(gD3DDevice->CreateRenderTargetView(Texture, NULL, &RenderTarget)))
+		{
+			return false;
+		}
+		D3D11_SHADER_RESOURCE_VIEW_DESC srDesc = {};
+		srDesc.Format = desc.Format;
+		srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srDesc.Texture2D.MostDetailedMip = 0;
+		srDesc.Texture2D.MipLevels = 1;
+		if (FAILED(gD3DDevice->CreateShaderResourceView(Texture, &srDesc, &TextureSRV)))
+		{
+			return false;
+		}
+	}
+};
 
 //****************************
 // Post processing textures
@@ -211,6 +247,20 @@ ID3D11ShaderResourceView* gGaussianFirstPassTextureSRV = nullptr;
 ID3D11Texture2D* gLowResTexture = nullptr; // This object represents the memory used by the texture on the GPU
 ID3D11RenderTargetView* gLowResRenderTarget = nullptr; // This object is used when we want to render to the texture above
 ID3D11ShaderResourceView* gLowResTextureSRV = nullptr;
+
+ID3D11Texture2D* gBloomMaskTexture = nullptr; // This object represents the memory used by the texture on the GPU
+ID3D11RenderTargetView* gBloomMaskRenderTarget = nullptr; // This object is used when we want to render to the texture above
+ID3D11ShaderResourceView* gBloomMaskTextureSRV = nullptr;
+
+ID3D11Texture2D* gBloomTexture = nullptr;
+ID3D11RenderTargetView* gBloomRenderTarget = nullptr;
+ID3D11ShaderResourceView* gBloomTextureSRV = nullptr;
+
+GeneratedTexture* gTexScene = new GeneratedTexture();
+GeneratedTexture* gTexMultiShader = new GeneratedTexture();
+GeneratedTexture* gTexGaussianFirstPass = new GeneratedTexture();
+GeneratedTexture* gTexLowRes = new GeneratedTexture();
+GeneratedTexture* gTexBloomMask = new GeneratedTexture();
 
 
 // Additional textures used for specific post-processes
@@ -311,7 +361,7 @@ bool InitGeometry()
 		return false;
 	}
 
-
+	
 
 	//********************************************
 	//**** Create Scene Texture
@@ -333,15 +383,26 @@ bool InitGeometry()
 	sceneTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // IMPORTANT: Indicate we will use texture as render target, and pass it to shaders
 	sceneTextureDesc.CPUAccessFlags = 0;
 	sceneTextureDesc.MiscFlags = 0;
+
+	/*gTexScene->InitTexture(sceneTextureDesc);
+	gTexMultiShader->InitTexture(sceneTextureDesc);
+	gTexGaussianFirstPass->InitTexture(sceneTextureDesc);
+	gTexBloomMask->InitTexture(sceneTextureDesc);*/
+
 	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gSceneTexture)) ||
 		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gMultiShaderTexture)) ||
-		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gGaussianFirstPassTexture)))
+		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gGaussianFirstPassTexture)) ||
+		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gBloomMaskTexture)) ||
+		FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gBloomTexture))
+		)
 	{
 		gLastError = "Error creating textures";
 		return false;
 	}
 	sceneTextureDesc.Width = gViewportWidth / gRetroScale;
 	sceneTextureDesc.Height = gViewportHeight / gRetroScale;
+
+	//gTexScene->InitTexture(sceneTextureDesc);
 
 	if (FAILED(gD3DDevice->CreateTexture2D(&sceneTextureDesc, NULL, &gLowResTexture)))
 	{
@@ -354,7 +415,10 @@ bool InitGeometry()
 	if (FAILED(gD3DDevice->CreateRenderTargetView(gSceneTexture, NULL, &gSceneRenderTarget)) ||
 		FAILED(gD3DDevice->CreateRenderTargetView(gMultiShaderTexture, NULL, &gMultiShaderRenderTarget)) ||
 		FAILED(gD3DDevice->CreateRenderTargetView(gGaussianFirstPassTexture, NULL, &gGaussianFirstPassRenderTarget)) ||
-		FAILED(gD3DDevice->CreateRenderTargetView(gLowResTexture, NULL, &gLowResRenderTarget)))
+		FAILED(gD3DDevice->CreateRenderTargetView(gLowResTexture, NULL, &gLowResRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gBloomMaskTexture, NULL, &gBloomMaskRenderTarget)) ||
+		FAILED(gD3DDevice->CreateRenderTargetView(gBloomTexture, NULL, &gBloomRenderTarget))
+		)
 	{
 		gLastError = "Error creating render target views";
 		return false;
@@ -366,18 +430,12 @@ bool InitGeometry()
 	srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	srDesc.Texture2D.MostDetailedMip = 0;
 	srDesc.Texture2D.MipLevels = 1;
-	if (FAILED(gD3DDevice->CreateShaderResourceView(gSceneTexture, &srDesc, &gSceneTextureSRV)))
-	{
-		gLastError = "Error creating scene shader resource view";
-		return false;
-	}
-
-	if (FAILED(gD3DDevice->CreateShaderResourceView(gMultiShaderTexture, &srDesc, &gMultiShaderTextureSRV)))
-	{
-		gLastError = "Error creating scene shader resource view";
-		return false;
-	}
-	if (FAILED(gD3DDevice->CreateShaderResourceView(gLowResTexture, &srDesc, &gLowResTextureSRV)))
+	if (FAILED(gD3DDevice->CreateShaderResourceView(gSceneTexture, &srDesc, &gSceneTextureSRV)) ||
+		FAILED(gD3DDevice->CreateShaderResourceView(gMultiShaderTexture, &srDesc, &gMultiShaderTextureSRV)) ||
+		FAILED(gD3DDevice->CreateShaderResourceView(gLowResTexture, &srDesc, &gLowResTextureSRV)) ||
+		FAILED(gD3DDevice->CreateShaderResourceView(gBloomMaskTexture, &srDesc, &gBloomMaskTextureSRV)) ||
+		FAILED(gD3DDevice->CreateShaderResourceView(gBloomTexture, &srDesc, &gBloomTextureSRV))
+		)
 	{
 		gLastError = "Error creating scene shader resource view";
 		return false;
@@ -449,6 +507,12 @@ void ReleaseResources()
 	if (gSceneTextureSRV)              gSceneTextureSRV->Release();
 	if (gSceneRenderTarget)            gSceneRenderTarget->Release();
 	if (gSceneTexture)                 gSceneTexture->Release();
+
+	delete(gTexScene);
+	delete(gTexMultiShader);
+	delete(gTexGaussianFirstPass);
+	delete(gTexBloomMask);
+	delete(gTexLowRes);
 
 	if (gDistortMapSRV)                gDistortMapSRV->Release();
 	if (gDistortMap)                   gDistortMap->Release();
@@ -600,7 +664,10 @@ void RenderSceneFromCamera(Camera* camera)
 
 // Select the appropriate shader plus any additional textures required for a given post-process
 // Helper function shared by full-screen, area and polygon post-processing functions below
-void SelectPostProcessShaderAndTextures(PostProcess postProcess)
+// Returns "true" if the multi shader loop should increase shader depth (if the texture target has not been changed)
+// Post process types with "Pass" at the end should not render to current scene texture, and instead should render to
+// alternate texture while returning "false".
+bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 {
 	if (postProcess == PostProcess::Copy)
 	{
@@ -669,11 +736,42 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gGaussianBlurPostProcess, nullptr, 0);
 		gD3DContext->PSSetSamplers(1, 1, &gPointSampler);
 	}
+	else if (postProcess == PostProcess::LowResPass)
+	{
+		gPostProcessingConstants.copyZoom = gRetroScale;
+		SelectPostProcessShaderAndTextures(PostProcess::Copy);
+		UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+		gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+		gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+		gD3DContext->OMSetRenderTargets(1, &gLowResRenderTarget, gDepthStencil);
+		gD3DContext->Draw(4, 0);
+		gPostProcessingConstants.copyZoom = 1.0f;
+		return false;
+	}
 	else if (postProcess == PostProcess::Retro)
 	{
 		gD3DContext->PSSetShader(gRetroPostProcess, nullptr, 0);
 		gD3DContext->PSSetShaderResources(1, 1, &gLowResTextureSRV);
 	}
+	else if (postProcess == PostProcess::BloomMaskPass)
+	{
+		gD3DContext->PSSetShader(gBloomMaskPostProcess, nullptr, 0);
+		gD3DContext->OMSetRenderTargets(1, &gBloomMaskRenderTarget, gDepthStencil);
+		gD3DContext->Draw(4, 0);
+		gD3DContext->PSSetShader(gBlurPostProcess, nullptr, 0);
+		gD3DContext->OMSetRenderTargets(1, &gBloomRenderTarget, gDepthStencil);
+		gD3DContext->PSSetShaderResources(0, 1, &gBloomMaskTextureSRV);
+		gD3DContext->PSSetShaderResources(1, 1, &gBlurMapSRV);
+
+		gD3DContext->Draw(4, 0);
+		return false;
+	}
+	else if (postProcess == PostProcess::Bloom)
+	{
+		gD3DContext->PSSetShader(gBloomPostProcess, nullptr, 0);
+		gD3DContext->PSSetShaderResources(1, 1, &gBloomTextureSRV);
+	}
+	return true;
 }
 
 
@@ -704,6 +802,7 @@ void FullScreenPostProcess(PostProcess postProcess)
 	gD3DContext->IASetInputLayout(NULL); // No vertex data
 	gD3DContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+	
 
 	// Select shader and textures needed for the required post-processes (helper function above)
 	SelectPostProcessShaderAndTextures(postProcess);
@@ -719,7 +818,6 @@ void FullScreenPostProcess(PostProcess postProcess)
 	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
 	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
 	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-
 
 	// Draw a quad
 	gD3DContext->Draw(4, 0);
@@ -769,31 +867,14 @@ void MultiShaderFullScreenPostProcess()
 
 	gD3DContext->Draw(4, 0);
 	//
-
-	
-
 	ID3D11ShaderResourceView* nextViewToUse = gMultiShaderTextureSRV;
+	int shaderDepth = 0;
 	//Run texture through each filter stored in the list
 	for (int i = 0; i < gPostProcessingList.size(); i++)
 	{
-		if (gPostProcessingList[i] == PostProcess::Retro)
-		{
-			gPostProcessingConstants.copyZoom = gRetroScale;
-			SelectPostProcessShaderAndTextures(PostProcess::Copy);
-			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
-			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-			gD3DContext->OMSetRenderTargets(1, &gLowResRenderTarget, gDepthStencil);
-			gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
-			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
-			gD3DContext->Draw(4, 0);
-			gPostProcessingConstants.copyZoom = 1.0f;
-		}
-
-		if (i % 2 == 0)
+		if (shaderDepth % 2 == 0)
 		{
 			gD3DContext->OMSetRenderTargets(1, &gSceneRenderTarget, gDepthStencil);
-
 			gD3DContext->PSSetShaderResources(0, 1, &gMultiShaderTextureSRV);
 			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
 			nextViewToUse = gSceneTextureSRV;
@@ -801,17 +882,19 @@ void MultiShaderFullScreenPostProcess()
 		else
 		{
 			gD3DContext->OMSetRenderTargets(1, &gMultiShaderRenderTarget, gDepthStencil);
-
 			gD3DContext->PSSetShaderResources(0, 1, &gSceneTextureSRV);
 			gD3DContext->PSSetSamplers(0, 1, &gPointSampler);
 			nextViewToUse = gMultiShaderTextureSRV;
 		}
 
-		SelectPostProcessShaderAndTextures(gPostProcessingList[i]);
-		UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
-		gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-		gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-		gD3DContext->Draw(4, 0);
+		if (SelectPostProcessShaderAndTextures(gPostProcessingList[i])) 
+		{
+			shaderDepth++;
+			UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+			gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+			gD3DContext->Draw(4, 0);
+		}
 	}
 	
 	//Set backbuffer to final texture
@@ -838,7 +921,7 @@ void AreaPostProcess(PostProcess postProcess, CVector3 worldPoint, CVector2 area
 {
 	// First perform a full-screen copy of the scene to back-buffer
 	FullScreenPostProcess(PostProcess::Copy);
-	
+
 
 	// Now perform a post-process of a portion of the scene to the back-buffer (overwriting some of the copy above)
 	// Note: The following code relies on many of the settings that were prepared in the FullScreenPostProcess call above, it only
@@ -905,8 +988,7 @@ void PolygonPostProcess(PostProcess postProcess, const std::array<CVector3, 4>& 
 {
 	// First perform a full-screen copy of the scene to back-buffer
 	FullScreenPostProcess(PostProcess::Copy);
-
-
+	
 	// Now perform a post-process of a portion of the scene to the back-buffer (overwriting some of the copy above)
 	// Note: The following code relies on many of the settings that were prepared in the FullScreenPostProcess call above, it only
 	//       updates a few things that need to be changed for an area process. If you tinker with the code structure you need to be
@@ -1119,9 +1201,14 @@ void UpdateScene(float frameTime)
 	};
 	if (KeyHit(Key_5)) {
 		gCurrentPostProcess = PostProcess::Retro;
-		gPostProcessingList.push_back(gCurrentPostProcess);
+		gPostProcessingList.push_back(PostProcess::LowResPass);
+		gPostProcessingList.push_back(PostProcess::Retro);
 	}
-	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
+	if (KeyHit(Key_6)) {
+		gCurrentPostProcess = PostProcess::Bloom;
+		gPostProcessingList.push_back(PostProcess::BloomMaskPass);
+		gPostProcessingList.push_back(PostProcess::Bloom);
+	}
 	if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
 	if (KeyHit(Key_0))
 	{
@@ -1196,6 +1283,8 @@ void UpdateScene(float frameTime)
 	gPostProcessingConstants.shiftTime += frameTime / 10.0f;
 
 	gPostProcessingConstants.copyZoom = 1.0f;
+	gPostProcessingConstants.brightnessForBloom = 0.7f;
+	gPostProcessingConstants.bloomStrength = 1.0f;
 
 	//***********
 

@@ -173,6 +173,10 @@ cbuffer PostProcessingConstants : register(b1)
 
     float gCopyZoom;
     float3 paddingL;
+    
+    float gBrightnessForBloom;
+    float gBloomStrength;
+    float2 paddingM;
 }
 
 //**************************
