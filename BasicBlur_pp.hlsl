@@ -31,7 +31,8 @@ float4 main(PostProcessingInput input) : SV_Target
         {
             int2 scenePos = { x - maskWidth / 2, y - maskHeight / 2 };
             float3 maskValue = BlurMask.Sample(BlurSample, float2(x * maskStepX, y * maskStepX)).rgb;
-            colourSum += SceneTexture.Sample(PointSample, input.sceneUV + float2(scenePos.x * sceneStepX, scenePos.y * sceneStepY)).rgb * maskValue;
+            float4 sampleColour = SceneTexture.Sample(PointSample, input.sceneUV + float2(scenePos.x * sceneStepX, scenePos.y * sceneStepY));
+            colourSum += sampleColour.rgb * maskValue * sampleColour.a;
 			
             maskStrength += maskValue.r;
         }

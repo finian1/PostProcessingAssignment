@@ -193,6 +193,8 @@ ID3D11ShaderResourceView* gWallDiffuseSpecularMapSRV = nullptr;
 ID3D11Resource*           gLightDiffuseMap = nullptr;
 ID3D11ShaderResourceView* gLightDiffuseMapSRV = nullptr;
 
+
+
 struct GeneratedTexture
 {
 	ID3D11Texture2D* Texture = nullptr;

@@ -32,6 +32,6 @@ float4 main(PostProcessingInput input) : SV_Target
     }
     else
     {
-        return float4(0, 0, 0, 1);
+        return float4(0, 0, 0, 0);
     }
 }
