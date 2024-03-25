@@ -768,7 +768,6 @@ bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->OMSetRenderTargets(1, &gBloomRenderTarget, gDepthStencil);
 		gD3DContext->PSSetShaderResources(0, 1, &gBloomMaskTextureSRV);
 		gD3DContext->PSSetShaderResources(1, 1, &gBlurMapSRV);
-
 		gD3DContext->Draw(4, 0);
 		return false;
 	}
