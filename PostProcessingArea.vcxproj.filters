@@ -109,9 +109,6 @@
     <FxCompile Include="WaterDistort_pp.hlsl">
       <Filter>Post-Processing Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Spiral_pp.hlsl">
-      <Filter>Post-Processing Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Distort_pp.hlsl">
       <Filter>Post-Processing Shaders</Filter>
     </FxCompile>

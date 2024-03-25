@@ -680,33 +680,33 @@ bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gCopyPostProcess, nullptr, 0);
 	}
 
-	else if (postProcess == PostProcess::Tint)
-	{
-		gD3DContext->PSSetShader(gTintPostProcess, nullptr, 0);
-	}
+	//else if (postProcess == PostProcess::Tint)
+	//{
+	//	gD3DContext->PSSetShader(gTintPostProcess, nullptr, 0);
+	//}
 
 	else if (postProcess == PostProcess::GradientTint)
 	{
 		gD3DContext->PSSetShader(gGradientTintPostProcess, nullptr, 0);
 	}
 
-	else if (postProcess == PostProcess::Burn)
-	{
-		gD3DContext->PSSetShader(gBurnPostProcess, nullptr, 0);
+	//else if (postProcess == PostProcess::Burn)
+	//{
+	//	gD3DContext->PSSetShader(gBurnPostProcess, nullptr, 0);
 
-		// Give pixel shader access to the burn texture (basically a height map that the burn level ascends)
-		gD3DContext->PSSetShaderResources(1, 1, &gBurnMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
+	//	// Give pixel shader access to the burn texture (basically a height map that the burn level ascends)
+	//	gD3DContext->PSSetShaderResources(1, 1, &gBurnMapSRV);
+	//	gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
+	//}
 
-	else if (postProcess == PostProcess::Distort)
-	{
-		gD3DContext->PSSetShader(gDistortPostProcess, nullptr, 0);
+	//else if (postProcess == PostProcess::Distort)
+	//{
+	//	gD3DContext->PSSetShader(gDistortPostProcess, nullptr, 0);
 
-		// Give pixel shader access to the distortion texture (containts 2D vectors (in R & G) to shift the texture UVs to give a cut-glass impression)
-		gD3DContext->PSSetShaderResources(1, 1, &gDistortMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
+	//	// Give pixel shader access to the distortion texture (containts 2D vectors (in R & G) to shift the texture UVs to give a cut-glass impression)
+	//	gD3DContext->PSSetShaderResources(1, 1, &gDistortMapSRV);
+	//	gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
+	//}
 
 	else if (postProcess == PostProcess::Water)
 	{
@@ -715,7 +715,7 @@ bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
 	}
 
-	else if (postProcess == PostProcess::Spiral)
+	/*else if (postProcess == PostProcess::Spiral)
 	{
 		gD3DContext->PSSetShader(gSpiralPostProcess, nullptr, 0);
 	}
@@ -723,7 +723,7 @@ bool SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	else if (postProcess == PostProcess::HeatHaze)
 	{
 		gD3DContext->PSSetShader(gHeatHazePostProcess, nullptr, 0);
-	}
+	}*/
 
 	else if (postProcess == PostProcess::Blur) {
 		gD3DContext->PSSetShader(gBlurPostProcess, nullptr, 0);
@@ -1098,12 +1098,12 @@ void RenderScene()
 		else if (gCurrentPostProcessMode == PostProcessMode::Polygon)
 		{
 			// An array of four points in world space - a tapered square centred at the origin
-			const std::array<CVector3, 4> points = {{ {0,5,0}, {-3,0,0}, {3,0,0}, {0,-5,0} }}; // C++ strangely needs an extra pair of {} here... only for std:array...
+			const std::array<CVector3, 4> points = {{ {-10,10,0}, {-10,-10,0}, {10,10,0}, {10,-10,0} }}; // C++ strangely needs an extra pair of {} here... only for std:array...
 			
-			CVector3 pos = { 40,10,10 };
+			CVector3 pos = { 50, 12.5, 50 };
 			// A rotating matrix placing the model above in the scene
-			static CMatrix4x4 polyMatrix = MatrixTranslation(pos);
-			polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
+			CMatrix4x4 polyMatrix = MatrixTranslation(pos);
+			polyMatrix = MatrixRotationY(ToRadians(40.0f)) * polyMatrix;
 			
 			// Pass an array of 4 points and a matrix. Only supports 4 points.
 			PolygonPostProcess(gCurrentPostProcess, points, polyMatrix);

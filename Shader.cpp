@@ -28,14 +28,14 @@ ID3D11PixelShader*    gPixelLightingPixelShader   = nullptr;
 ID3D11VertexShader* g2DQuadVertexShader      = nullptr;
 ID3D11VertexShader* g2DPolygonVertexShader   = nullptr;
 ID3D11PixelShader*  gCopyPostProcess         = nullptr;
-ID3D11PixelShader*  gTintPostProcess         = nullptr;
+//ID3D11PixelShader*  gTintPostProcess         = nullptr;
 ID3D11PixelShader*  gGradientTintPostProcess = nullptr;
-ID3D11PixelShader*  gBurnPostProcess         = nullptr;
-ID3D11PixelShader*  gDistortPostProcess      = nullptr;
+//ID3D11PixelShader*  gBurnPostProcess         = nullptr;
+//ID3D11PixelShader*  gDistortPostProcess      = nullptr;
 ID3D11PixelShader*  gBlurPostProcess         = nullptr;
 ID3D11PixelShader*  gGaussianBlurPostProcess = nullptr;
-ID3D11PixelShader*  gSpiralPostProcess       = nullptr;
-ID3D11PixelShader*  gHeatHazePostProcess     = nullptr;
+//ID3D11PixelShader*  gSpiralPostProcess       = nullptr;
+//ID3D11PixelShader*  gHeatHazePostProcess     = nullptr;
 ID3D11PixelShader*  gWaterDistortPostProcess = nullptr;
 ID3D11PixelShader*	gRetroPostProcess		 = nullptr;
 ID3D11PixelShader*  gBloomMaskPostProcess    = nullptr;
@@ -62,14 +62,14 @@ bool LoadShaders()
 	g2DPolygonVertexShader = LoadVertexShader("2DPolygon_pp");
 	g2DQuadVertexShader    = LoadVertexShader("2DQuad_pp");
 	gCopyPostProcess       = LoadPixelShader ("Copy_pp");
-	gTintPostProcess       = LoadPixelShader ("Tint_pp");
+	//gTintPostProcess       = LoadPixelShader ("Tint_pp");
 	gGradientTintPostProcess = LoadPixelShader("GradientTint_pp");
-	gBurnPostProcess       = LoadPixelShader ("Burn_pp");
-	gDistortPostProcess    = LoadPixelShader ("Distort_pp");
+	//gBurnPostProcess       = LoadPixelShader ("Burn_pp");
+	//gDistortPostProcess    = LoadPixelShader ("Distort_pp");
 	gBlurPostProcess = LoadPixelShader("BasicBlur_pp");
 	gGaussianBlurPostProcess = LoadPixelShader("GaussianBlur_pp");
-	gSpiralPostProcess     = LoadPixelShader ("Spiral_pp");
-	gHeatHazePostProcess   = LoadPixelShader ("HeatHaze_pp");
+	//gSpiralPostProcess     = LoadPixelShader ("Spiral_pp");
+	//gHeatHazePostProcess   = LoadPixelShader ("HeatHaze_pp");
 	gWaterDistortPostProcess = LoadPixelShader("WaterDistort_pp");
 	gRetroPostProcess = LoadPixelShader("Retro_pp");
 	gBloomMaskPostProcess = LoadPixelShader("BloomMaskPass_pp");
@@ -78,9 +78,9 @@ bool LoadShaders()
 	if (gBasicTransformVertexShader == nullptr || gPixelLightingVertexShader == nullptr ||
 		gTintedTexturePixelShader   == nullptr || gPixelLightingPixelShader  == nullptr ||
 		g2DQuadVertexShader         == nullptr || gCopyPostProcess           == nullptr ||
-		gTintPostProcess            == nullptr || gHeatHazePostProcess       == nullptr ||
-		gBurnPostProcess           == nullptr || gGaussianBlurPostProcess == nullptr ||
-		gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
+		/*gTintPostProcess            == nullptr || gHeatHazePostProcess       == nullptr ||*/
+		/*gBurnPostProcess           == nullptr ||*/ gGaussianBlurPostProcess == nullptr ||
+		//gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
 		g2DPolygonVertexShader      == nullptr || gGradientTintPostProcess == nullptr ||
 		gBlurPostProcess == nullptr || gWaterDistortPostProcess == nullptr ||
 		gRetroPostProcess == nullptr || gBloomMaskPostProcess == nullptr ||
@@ -96,11 +96,11 @@ bool LoadShaders()
 
 void ReleaseShaders()
 {
-	if (gHeatHazePostProcess)         gHeatHazePostProcess       ->Release();
+	/*if (gHeatHazePostProcess)         gHeatHazePostProcess       ->Release();
 	if (gSpiralPostProcess)           gSpiralPostProcess         ->Release();
 	if (gDistortPostProcess)          gDistortPostProcess        ->Release();
 	if (gBurnPostProcess)             gBurnPostProcess           ->Release();
-	if (gTintPostProcess)             gTintPostProcess           ->Release();
+	if (gTintPostProcess)             gTintPostProcess           ->Release();*/
 	if (gGradientTintPostProcess)	  gGradientTintPostProcess   ->Release();
 	if (gCopyPostProcess)             gCopyPostProcess           ->Release();
 	if (g2DPolygonVertexShader)       g2DPolygonVertexShader     ->Release();
